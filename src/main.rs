@@ -1,64 +1,57 @@
-use std::env;
-use std::ffi::CString;
+use std::path::PathBuf;
 
-use nix::libc::SIGCHLD;
-use nix::mount::{mount, MsFlags};
-use nix::sched::{clone, CloneFlags};
-use nix::sys::wait::waitpid;
-use nix::unistd::execv;
-use nix::unistd::getpid;
-use nix::unistd::pivot_root;
+use clap::{Parser, Subcommand};
 
-fn exec() -> isize {
-    let args: Vec<CString> = env::args().map(|s| CString::new(s).unwrap()).collect();
-    let new_root = "/home/waritasa/mountpoint";
-    env::set_current_dir(new_root).unwrap();
-    println!("current directory: {:?}", env::current_dir().unwrap());
-    mount(
-        Some(""),
-        "/",
-        Some(""),
-        MsFlags::MS_SLAVE | MsFlags::MS_REC,
-        Some(""),
-    )
-    .unwrap();
-    mount(
-        Some("."),
-        ".",
-        Some(""),
-        MsFlags::MS_BIND | MsFlags::MS_REC,
-        Some(""),
-    )
-    .unwrap();
-    pivot_root(".", ".").unwrap();
-    mount(
-        Some("proc"),
-        "/proc",
-        Some("proc"),
-        MsFlags::empty(),
-        Some(""),
-    )
-    .unwrap();
-    execv(&args[1], &args[1..]).unwrap();
-    0
+#[derive(Parser)]
+#[command(version = "0.0.1", about = "Open Container Initiative runtime", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// output the state of a container
+    State { container_id: String },
+    /// create a container
+    Create {
+        container_id: String,
+        path_to_bundle: PathBuf,
+    },
+    /// executes the user defined process in a created container
+    Start { container_id: String },
+    /// kill sends the specified signal (default: SIGTERM) to the container's init process
+    Kill {
+        container_id: String,
+        signal: Option<i32>,
+    },
+    /// delete any resources held by the container often used with detached container
+    Delete { container_id: String },
 }
 
 fn main() {
-    println!("pid: {}", getpid());
-    const STACK_SIZE: usize = 1024 * 1024;
-    let mut stack: [u8; STACK_SIZE] = [0; STACK_SIZE];
-    unsafe {
-        let pid = clone(
-            Box::new(exec),
-            &mut stack,
-            CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWPID,
-            Some(SIGCHLD),
-        )
-        .unwrap();
-        println!("child pid: {}", pid);
-        match waitpid(pid, None) {
-            Ok(status) => println!("child process exited {:?}", status),
-            Err(err) => panic!("failed to waitpid {:?}", err),
+    let cli = Cli::parse();
+    match &cli.command {
+        Commands::State { container_id } => {
+            println!("state command {}", container_id);
+        }
+        Commands::Create {
+            container_id,
+            path_to_bundle,
+        } => {
+            println!("create command {} {:?}", container_id, path_to_bundle);
+        }
+        Commands::Start { container_id } => {
+            println!("start command {}", container_id);
+        }
+        Commands::Kill {
+            container_id,
+            signal,
+        } => {
+            println!("kill command {} {:?}", container_id, signal);
+        }
+        Commands::Delete { container_id } => {
+            println!("delete command {}", container_id);
         }
     }
 }
