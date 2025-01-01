@@ -1,6 +1,76 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Config {
+    oci_version: String,
+    root: Root,
+    process: Process,
+    hostname: Option<String>,
+    domainname: Option<String>,
+    mounts: Option<Vec<Mount>>,
+    linux: Option<Linux>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Root {
+    path: String,
+    #[serde(default)]
+    readonly: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Process {
+    #[serde(default)]
+    terminal: bool,
+    console_size: Option<ConsoleSize>,
+    user: User,
+    cwd: String,
+    env: Option<Vec<String>>,
+    args: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct ConsoleSize {
+    height: usize,
+    width: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct User {
+    uid: usize,
+    gid: usize,
+    umask: Option<usize>,
+    additional_gids: Option<Vec<usize>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Mount {
+    destination: String,
+    source: Option<String>,
+    options: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Linux {
+    namespaces: Vec<Namespace>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Namespace {
+    r#type: String,
+    path: Option<String>,
+}
 
 #[derive(Parser)]
 #[command(version = "0.0.1", about = "Open Container Initiative runtime", long_about = None)]
