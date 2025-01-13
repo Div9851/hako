@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::env;
-use std::fs::{create_dir_all, read_to_string, remove_file};
-use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+use std::fs::read_to_string;
+use std::os::fd::{AsRawFd, OwnedFd};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -9,10 +9,10 @@ use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
 use nix::sys::socket::{
-    accept, bind, connect, listen, recv, send, socket, socketpair, AddressFamily, Backlog,
-    MsgFlags, SockFlag, SockType, UnixAddr,
+    recv, send, socketpair, AddressFamily,
+    MsgFlags, SockFlag, SockType,
 };
-use nix::unistd::{close, fork, ForkResult};
+use nix::unistd::{fork, ForkResult};
 
 use anyhow::{Context, Error, Result};
 
